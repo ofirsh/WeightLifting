@@ -1,12 +1,12 @@
 {
-    "contents" : "",
+    "contents" : "library(caret)\nset.seed(200801)\n\n# train <- read.table(\"data/pml-training.csv\",sep=\",\",header=TRUE,colClasses=c(\"numeric\",\"character\",\"numeric\",\"numeric\",\"Date\",\"logical\",rep(\"numeric\",154)))\ntrain.raw <- read.table(\"data/pml-training.csv\",sep=\",\",header=TRUE,colClasses=c(\"character\",\"character\",\"numeric\",\"numeric\",\"Date\",\"character\",rep(\"character\",154)))\n\n# test set don't contain the column named \"classe\" (but \"problem_id\"), all other points are the same \n# instead we will split the training set to create a train and test sets\nsubmission.raw <- read.table(\"data/pml-testing.csv\",sep=\",\",header=TRUE)\n\nnTrainNA <- apply( train.raw,2,function(x) sum(is.na(x) | x == \"\" ) )\n# column names where there are more than 15,000 missing values \nalmostEmptyColumns <- names(which(nTrainNA > 15000))\n\n# after removing the almost-empty columns and the first 6 columns, left with 54 columns (X, timestamp etc), including the \"classe\" (y)\ntrain.clean <- train.raw[,!( names(train.raw) %in% almostEmptyColumns ) ][,-c(1:6)]\n\n# remove from the submission the same columns as the one removed from the training, including the last column which is problem_id\nsubmission <- submission.raw[,!( names(submission.raw) %in% almostEmptyColumns ) ][,-c(1:6)][,-54]\n\ninTrain <- createDataPartition(y=train.clean$classe,p=0.75,list=FALSE)\ntraining <- train.clean[inTrain,]\ntesting <- train.clean[-inTrain,]\n\nmodelFitGlm <- train(classe ~ ., data=training,method = \"glm\")\n\n# modelFitGlm$finalModel\n\npredictions <- predict(modelFitGlm, newdata = testing)\nconfusionMatrix(predictions,testing$classe)\n\n\n",
     "created" : 1416127897266.000,
     "dirty" : false,
     "encoding" : "UTF-8",
     "folds" : "",
-    "hash" : "0",
+    "hash" : "4227198338",
     "id" : "1F190B2F",
-    "lastKnownWriteTime" : 1416127910,
+    "lastKnownWriteTime" : 1416465498,
     "path" : "~/Documents/Develop/Coursera/MachineLearning/WeightLiftingExercises/WeightLifting.R",
     "project_path" : "WeightLifting.R",
     "properties" : {

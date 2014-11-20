@@ -1,0 +1,101 @@
+---
+title: "Weight Lifting Exercise"
+date: "21 November, 2014"
+output: html_document
+---
+
+Weight Lifting Exercises Dataset
+
+This human activity recognition research has traditionally focused on discriminating between different activities, i.e. to predict "which" activity was performed at a specific point in time (like with the Daily Living Activities dataset above). The approach we propose for the Weight Lifting Exercises dataset is to investigate "how (well)" an activity was performed by the wearer. The "how (well)" investigation has only received little attention so far, even though it potentially provides useful information for a large variety of applications,such as sports training.
+
+Read more: <http://groupware.les.inf.puc-rio.br/har#ixzz3JcqItTYv>
+
+# Summary
+
+In this work we've applied a three steps process, buidling a classifier with 96.17% accuracy ( 95% CI : (0.9559, 0.9669) ).   
+1. Removing variables with very small amount of information (over 90% is empty) and splitting to training (75%) and testing (25%) sets.   
+2. Applying PCA and selecting the first 10 PCA vectors, that account for more than 90% of the variation.   
+3. Training a Random Forest model and testing the performance on the test set.    
+   
+As an additional step, we've applied the predive model on the 20 samples used for submission.
+
+## Data Preperation
+
+```{r, echo=FALSE, results='hide', warning=FALSE, message=FALSE}
+library(caret)
+set.seed(200801)
+```
+
+```{r, cache=TRUE}
+train.raw <- read.table("data/pml-training.csv",sep=",",header=TRUE,colClasses=c("character","character","numeric","numeric","Date","character",rep("character",154)))
+submission.raw <- read.table("data/pml-testing.csv",sep=",",header=TRUE)
+nTrainNA <- apply( train.raw,2,function(x) sum(is.na(x) | x == "" ) )
+almostEmptyColumns <- names(which(nTrainNA > 15000))
+# after removing the almost-empty columns and the first 6 columns, left with 54 columns (X, timestamp etc), including the "classe" (y)
+train.clean.factor <- train.raw[,!( names(train.raw) %in% almostEmptyColumns ) ][,-c(1:6)]
+train.clean <- data.frame( data.matrix(train.clean.factor[,-54]), train.clean.factor[,54])
+names(train.clean)[54] <- "class"
+# remove from the submission the same columns as the one removed from the training, including the last column which is problem_id
+submission.factor <- submission.raw[,!( names(submission.raw) %in% almostEmptyColumns ) ][,-c(1:6)][,-54]
+submission <- data.frame( data.matrix( submission.factor ) )
+```
+
+## Split to Training and Testing sets
+
+```{r}
+inTrain <- createDataPartition(y=train.clean$class,p=0.75,list=FALSE)
+training <- train.clean[inTrain,]
+testing <- train.clean[-inTrain,]
+```
+
+## Apply PCA for Dimensionsality Reduction
+
+```{r}
+prComp <- prcomp(training[,-54])
+plot( cumsum(prComp$sdev^2/sum(prComp$sdev^2)), main = "Cumulative Sums - PCA",xlab="Vector", ylab="Cumulative Sums" ) 
+```
+
+From the plot it's clear that 10 PCA vectors will cover more tha 90% of the deviation.
+
+## Apply the PCA (top 10 vectors) on the training set
+
+```{r}
+preProc <- preProcess( training[,-54], method="pca", pcaComp = 10)
+trainingPC <- predict(preProc,training[,-54])
+trainingPCy <- data.frame(trainingPC, training$class)
+names(trainingPCy)[11] <- "class"
+```
+
+## Train the Random Forest model
+```{r,cache=TRUE}
+modelFitTree <- train(class ~ ., method = "rf", data=trainingPCy)
+```
+
+## Apply the model on the testing set
+```{r}
+testPC <- predict(preProc,testing[,-54])
+predictions <- predict(modelFitTree, testPC)
+confusionMatrix(predictions,testing$class)
+```
+
+As can be seen by the overall statistics, the accuracy is 96.17% with 95% CI : (0.9559, 0.9669)
+
+In random forests, there is no need for cross-validation or a separate test set to get an unbiased estimate of the test set error. It is estimated internally, during the run.   
+
+For more information, please refer to <https://www.stat.berkeley.edu/~breiman/RandomForests/cc_home.htm>
+
+## Finally, apply  the predive model on the 20 samples used for submission.
+
+```{r}
+submissionPC <- predict(preProc,submission)
+answers <- predict(modelFitTree,submissionPC)
+pml_write_files = function(x){
+    n = length(x)
+    for(i in 1:n){
+        filename = paste0("problem_id_",i,".txt")
+        write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+    }
+}
+pml_write_files(answers)
+```
+

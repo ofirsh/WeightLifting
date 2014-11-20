@@ -44,10 +44,28 @@ modelFitTree <- train(class ~ ., method = "rf", data=trainingPCy)
 # plot(modelFitTree$finalModel, uniform = TRUE, main = "Classification Tree")
 # text(modelFitTree$model, use.n = TRUE, cex=.8)
 
-
 testPC <- predict(preProc,testing[,-54])
 predictions <- predict(modelFitTree, testPC)
-
 confusionMatrix(predictions,testing$class)
 
+# Overall Statistics
+# 
+# Accuracy : 0.9617          
+# 95% CI : (0.9559, 0.9669)
+# No Information Rate : 0.2845          
+# P-Value [Acc > NIR] : < 2.2e-16       
 
+# now applying the model on the submission set
+submissionPC <- predict(preProc,submission)
+answers <- predict(modelFitTree,submissionPC)
+
+
+# answers = rep("A", 20)
+
+pml_write_files = function(x){
+    n = length(x)
+    for(i in 1:n){
+        filename = paste0("problem_id_",i,".txt")
+        write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+    }
+}

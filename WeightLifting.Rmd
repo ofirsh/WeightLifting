@@ -12,12 +12,12 @@ Read more: <http://groupware.les.inf.puc-rio.br/har#ixzz3JcqItTYv>
 
 # Summary
 
-In this work we've applied a three steps process, buidling a classifier with 96.17% accuracy ( 95% CI : (0.9559, 0.9669) ).   
+In this work we've applied a three steps process, buidling a classifier with 96.3% accuracy ( 95% CI : (0.957, 0.968) ).   
 1. Removing variables with very small amount of information (over 90% is empty) and splitting to training (75%) and testing (25%) sets.   
 2. Applying PCA and selecting the first 10 PCA vectors, that account for more than 90% of the variation.   
 3. Training a Random Forest model and testing the performance on the test set.    
    
-As an additional step, we've applied the predive model on the 20 samples used for submission.
+As an additional step, we've applied the predictive model on the 20 samples used for submission.
 
 ## Data Preperation
 
@@ -78,13 +78,13 @@ predictions <- predict(modelFitTree, testPC)
 confusionMatrix(predictions,testing$class)
 ```
 
-As can be seen by the overall statistics, the accuracy is 96.17% with 95% CI : (0.9559, 0.9669)
+The classifier is fairly accurate, with overallaccuracy of 96.3% and with 95% CI : (0.957, 0.968)
 
 In random forests, there is no need for cross-validation or a separate test set to get an unbiased estimate of the test set error. It is estimated internally, during the run.   
 
 For more information, please refer to <https://www.stat.berkeley.edu/~breiman/RandomForests/cc_home.htm>
 
-## Finally, apply  the predive model on the 20 samples used for submission.
+## Finally, apply the predictive model on the 20 samples used for submission.
 
 ```{r}
 submissionPC <- predict(preProc,submission)

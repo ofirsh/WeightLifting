@@ -13,20 +13,41 @@ nTrainNA <- apply( train.raw,2,function(x) sum(is.na(x) | x == "" ) )
 almostEmptyColumns <- names(which(nTrainNA > 15000))
 
 # after removing the almost-empty columns and the first 6 columns, left with 54 columns (X, timestamp etc), including the "classe" (y)
-train.clean <- train.raw[,!( names(train.raw) %in% almostEmptyColumns ) ][,-c(1:6)]
+train.clean.factor <- train.raw[,!( names(train.raw) %in% almostEmptyColumns ) ][,-c(1:6)]
+train.clean <- data.frame( data.matrix(train.clean.factor[,-54]), train.clean.factor[,54])
+names(train.clean)[54] <- "class"
 
 # remove from the submission the same columns as the one removed from the training, including the last column which is problem_id
-submission <- submission.raw[,!( names(submission.raw) %in% almostEmptyColumns ) ][,-c(1:6)][,-54]
+submission.factor <- submission.raw[,!( names(submission.raw) %in% almostEmptyColumns ) ][,-c(1:6)][,-54]
+submission <- data.frame( data.matrix( submission.factor ) )
 
-inTrain <- createDataPartition(y=train.clean$classe,p=0.75,list=FALSE)
+inTrain <- createDataPartition(y=train.clean$class,p=0.75,list=FALSE)
 training <- train.clean[inTrain,]
 testing <- train.clean[-inTrain,]
 
-modelFitGlm <- train(classe ~ ., data=training,method = "glm")
+prComp <- prcomp(training[,-54])
 
-# modelFitGlm$finalModel
+plot(cumsum(prComp$sdev^2/sum(prComp$sdev^2))) 
+# from the plot it's clear that 10 PCA vectors will cover more tha 90% of the deviation
 
-predictions <- predict(modelFitGlm, newdata = testing)
-confusionMatrix(predictions,testing$classe)
+preProc <- preProcess( training[,-54], method="pca", pcaComp = 10)
+
+trainingPC <- predict(preProc,training[,-54])
+trainingPCy <- data.frame(trainingPC, training$class)
+names(trainingPCy)[11] <- "class"
+
+# rpart ~30% accuracy
+
+# modelFitTree <- train(class ~ ., method = "rpart", data=trainingPCy)
+modelFitTree <- train(class ~ ., method = "rf", data=trainingPCy)
+
+# plot(modelFitTree$finalModel, uniform = TRUE, main = "Classification Tree")
+# text(modelFitTree$model, use.n = TRUE, cex=.8)
+
+
+testPC <- predict(preProc,testing[,-54])
+predictions <- predict(modelFitTree, testPC)
+
+confusionMatrix(predictions,testing$class)
 
 

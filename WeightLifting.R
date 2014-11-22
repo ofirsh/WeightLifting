@@ -1,7 +1,6 @@
 library(caret)
 set.seed(200801)
 
-# train <- read.table("data/pml-training.csv",sep=",",header=TRUE,colClasses=c("numeric","character","numeric","numeric","Date","logical",rep("numeric",154)))
 train.raw <- read.table("data/pml-training.csv",sep=",",header=TRUE,colClasses=c("character","character","numeric","numeric","Date","character",rep("character",154)))
 
 # test set don't contain the column named "classe" (but "problem_id"), all other points are the same 
